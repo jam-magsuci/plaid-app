@@ -138,11 +138,11 @@ export const TransactionList: FC<{ transactions: Transaction[] }> = ({
                 <TableCell className="hidden text-right lg:table-cell">
                   <Badge
                     variant={
-                      transaction.status === "pending" ? "secondary" : "outline"
+                      transaction.pending ? "secondary" : "outline"
                     }
-                    className="capitalize"
+                    className="capitalize bg-green-100 text-green-800"
                   >
-                    {transaction.status}
+                    {transaction.pending ? "Pending" : "Completed"}
                   </Badge>
                 </TableCell>
               </TableRow>

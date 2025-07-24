@@ -14,6 +14,6 @@ export type Transaction = {
   date: string // ISO date string
   description: string
   amount: number // positive for income, negative for expense
-  status: "posted" | "pending"
+  pending: boolean
   category: TransactionCategory
 }

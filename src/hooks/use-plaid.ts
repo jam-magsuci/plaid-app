@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Transaction } from '@/lib/types';
 
 export function usePlaidLinkToken() {
@@ -19,6 +19,8 @@ export function usePlaidLinkToken() {
 }
 
 export function useExchangeToken() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (publicToken: string) => {
       const response = await fetch('/api/plaid/exchange-token', {
@@ -32,6 +34,10 @@ export function useExchangeToken() {
         throw new Error('Failed to exchange token');
       }
       return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate transactions query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }
@@ -52,5 +58,8 @@ export function useTransactions() {
       const data = await response.json();
       return data.transactions as Transaction[];
     },
+    refetchOnWindowFocus: true,
+    retry: 3,
+    retryDelay: 1000,
   });
 }
