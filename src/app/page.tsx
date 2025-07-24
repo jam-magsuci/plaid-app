@@ -4,85 +4,36 @@ import { Button } from "@/components/ui/button"
 import { TransactionList } from "@/components/transaction-list"
 import { PlusCircle } from "lucide-react"
 import { usePlaidLink } from "react-plaid-link"
-import { useState, useCallback, useEffect } from "react"
-import type { Transaction } from "@/lib/types"
+import { useEffect } from 'react';
+import { usePlaidLinkToken, useExchangeToken, useTransactions } from "@/hooks/use-plaid"
 
 export default function Home() {
-  const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchTransactions = useCallback(async () => {
-    try {
-      const response = await fetch('/api/plaid/transactions');
-      if (!response.ok) {
-        const error = await response.json();
-        if (response.status === 400) {
-          // No access token yet, this is expected for new users
-          setIsLoading(false);
-          return;
-        }
-        throw new Error(error.message || 'Failed to fetch transactions');
-      }
-      const data = await response.json();
-      setTransactions(data.transactions);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+  const { mutate: getLinkToken, data: linkToken } = usePlaidLinkToken();
+  const { mutate: exchangeToken } = useExchangeToken();
+  const { data: transactions = [], isLoading } = useTransactions();
 
   const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess: async (public_token, metadata) => {
+    token: linkToken ?? null,
+    onSuccess: async (public_token) => {
       try {
-        const response = await fetch('/api/plaid/exchange-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ public_token }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to exchange token');
-        }
-
-        // Fetch updated transactions
-        await fetchTransactions();
+        await exchangeToken(public_token);
       } catch (error) {
         console.error('Error exchanging token:', error);
       }
     },
   });
 
-  const fetchLinkToken = useCallback(async () => {
-    try {
-      const response = await fetch('/api/plaid/link-token', {
-        method: 'POST',
-      });
-      const { link_token } = await response.json();
-      setLinkToken(link_token);
-    } catch (error) {
-      console.error('Error fetching link token:', error);
-    }
-  }, []);
-
-  // Fetch link token on mount
   useEffect(() => {
-    fetchLinkToken();
-  }, [fetchLinkToken]);
+    if (!linkToken) {
+      getLinkToken();
+    }
+  }, [getLinkToken, linkToken]);
 
-  const handleClick = useCallback(() => {
-    if (ready) {
+  const handleClick = () => {
+    if (ready && linkToken) {
       open();
     }
-  }, [open, ready]);
+  };
 
   return (
     <div className="min-h-screen bg-background font-sans antialiased">
