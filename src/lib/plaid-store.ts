@@ -5,6 +5,10 @@ let accessToken: string | null = null;
 export const plaidStore = {
   setAccessToken: (token: string) => {
     accessToken = token;
+    console.log('Access token set in store');
   },
-  getAccessToken: () => accessToken,
+  getAccessToken: () => {
+    console.log('Getting access token from store:', accessToken ? 'token exists' : 'no token');
+    return accessToken;
+  },
 };

@@ -26,12 +26,16 @@ export async function POST(request: Request) {
     // Store the access token in our simple store
     plaidStore.setAccessToken(accessToken);
     
+    console.log('Successfully stored access token:', { accessToken });
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error exchanging public token:', error);
+  } catch (error: any) {
+    console.error('Error exchanging public token:', {
+      error: error.response?.data || error,
+      status: error.response?.status
+    });
     return NextResponse.json(
-      { error: 'Failed to exchange token' },
-      { status: 500 }
+      { error: error.response?.data?.error_message || 'Failed to exchange token' },
+      { status: error.response?.status || 500 }
     );
   }
 }

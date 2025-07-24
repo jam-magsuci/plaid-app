@@ -32,6 +32,9 @@ export async function GET() {
       access_token: accessToken,
       start_date: startDate.toISOString().split('T')[0],
       end_date: now.toISOString().split('T')[0],
+      options: {
+        include_personal_finance_category: true
+      }
     });
 
     const transactions = response.data.transactions.map(transaction => ({
@@ -44,11 +47,14 @@ export async function GET() {
     }));
 
     return NextResponse.json({ transactions });
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
+  } catch (error: any) {
+    console.error('Error fetching transactions:', {
+      error: error.response?.data || error,
+      status: error.response?.status
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch transactions' },
-      { status: 500 }
+      { error: error.response?.data?.error_message || 'Failed to fetch transactions' },
+      { status: error.response?.status || 500 }
     );
   }
 }
