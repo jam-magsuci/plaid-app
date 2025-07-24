@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function OAuthRedirect() {
+function OAuthRedirectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -49,5 +49,13 @@ export default function OAuthRedirect() {
         <p className="text-muted-foreground">Please wait while we complete the connection.</p>
       </div>
     </div>
+  );
+}
+
+export default function OAuthRedirect() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OAuthRedirectContent />
+    </Suspense>
   );
 }
