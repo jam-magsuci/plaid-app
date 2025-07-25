@@ -43,11 +43,20 @@ export function useExchangeToken() {
   });
 }
 
-export function useTransactions() {
+interface DateRange {
+  startDate?: string;
+  endDate?: string;
+}
+
+export function useTransactions(dateRange?: DateRange) {
   return useQuery({
-    queryKey: ['transactions'],
+    queryKey: ['transactions', dateRange],
     queryFn: async () => {
-      const response = await fetch('/api/plaid/transactions');
+      const searchParams = new URLSearchParams();
+      if (dateRange?.startDate) searchParams.set('startDate', dateRange.startDate);
+      if (dateRange?.endDate) searchParams.set('endDate', dateRange.endDate);
+      
+      const response = await fetch(`/api/plaid/transactions?${searchParams.toString()}`);
       if (!response.ok) {
         const error = await response.json();
         if (response.status === 400) {
