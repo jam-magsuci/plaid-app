@@ -14,7 +14,7 @@ const configuration = new Configuration({
 
 const client = new PlaidApi(configuration);
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const accessToken = plaidStore.getAccessToken();
     if (!accessToken) {
@@ -24,14 +24,14 @@ export async function GET() {
       );
     }
 
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 30); // Get last 30 days of transactions
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDate = searchParams.get('endDate') || new Date().toISOString().split('T')[0];
 
     const response = await client.transactionsGet({
       access_token: accessToken,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: now.toISOString().split('T')[0],
+      start_date: startDate,
+      end_date: endDate,
       options: {
         include_personal_finance_category: true,
         count: 100,
