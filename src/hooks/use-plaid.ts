@@ -36,8 +36,9 @@ export function useExchangeToken() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate transactions query to trigger a refetch
+      // Invalidate queries to trigger refetch of both transactions and institution
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['institution'] });
     },
   });
 }

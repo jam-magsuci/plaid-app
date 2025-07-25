@@ -6,8 +6,12 @@ import { PlusCircle } from "lucide-react"
 import { usePlaidLink } from "react-plaid-link"
 import { useEffect } from 'react';
 import { usePlaidLinkToken, useExchangeToken, useTransactions } from "@/hooks/use-plaid"
+import { useQueryClient } from "@tanstack/react-query";
+
+
 
 export default function Home() {
+  const queryClient = useQueryClient();
   const { mutate: getLinkToken, data: linkToken } = usePlaidLinkToken();
   const { mutate: exchangeToken } = useExchangeToken();
   const { data: transactions = [], isLoading } = useTransactions();
@@ -21,6 +25,10 @@ export default function Home() {
         console.error('Error exchanging token:', error);
       }
     },
+    onExit: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['institution'] });
+    }
   });
 
   useEffect(() => {
