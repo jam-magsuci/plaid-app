@@ -142,7 +142,7 @@ export const TransactionList: FC<{ transactions: Transaction[] }> = ({
                     }
                     className="capitalize bg-green-100 text-green-800"
                   >
-                    {transaction.pending ? "Pending" : "Completed"}
+                    {transaction.pending ? "Pending" : "Posted"}
                   </Badge>
                 </TableCell>
               </TableRow>
