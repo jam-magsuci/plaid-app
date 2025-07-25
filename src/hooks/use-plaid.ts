@@ -48,8 +48,18 @@ interface DateRange {
   to?: Date;
 }
 
+export function useSyncStatus() {
+  const queryClient = useQueryClient();
+  const syncStatusKey = ['transactions', 'syncStatus'] as const;
+  return queryClient.getQueryData(syncStatusKey) as 'syncing' | 'complete' | undefined;
+}
+
 export function useTransactions(dateRange?: { startDate: string; endDate: string }) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const firstFetchTimeKey = ['transactions', 'firstFetchTime'] as const;
+  const syncStatusKey = ['transactions', 'syncStatus'] as const;
+
+  return useQuery<Transaction[], Error, Transaction[], [string, typeof dateRange]>({
     queryKey: ['transactions', dateRange],
     queryFn: async () => {
       const searchParams = new URLSearchParams();
@@ -71,6 +81,40 @@ export function useTransactions(dateRange?: { startDate: string; endDate: string
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 1000,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache old data
+    initialData: [], // Start with empty array
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const prevData = query.state.data; // Get previous data snapshot
+      const firstFetchTime = queryClient.getQueryData(firstFetchTimeKey) as number | undefined;
+      
+      // If this is the first fetch with data, start polling
+      if (data?.length && data.length > 0) {
+        if (!firstFetchTime) {
+          queryClient.setQueryData(firstFetchTimeKey, Date.now());
+          queryClient.setQueryData(syncStatusKey, 'syncing');
+          return 10000; // Start polling
+        }
+
+        // Check if we've received new transactions in this fetch
+        const hasNewTransactions = data.length > (prevData?.length || 0);
+        const timeSinceFirstFetch = Date.now() - firstFetchTime;
+
+        // Continue polling if we're still getting new data or haven't reached timeout
+        if (hasNewTransactions || timeSinceFirstFetch < 30 * 1000) { // 30 seconds timeout
+          return 10000; // Poll every 10 seconds
+        }
+
+        // No new transactions and timeout reached, stop polling
+        queryClient.removeQueries({ queryKey: firstFetchTimeKey });
+        queryClient.setQueryData(syncStatusKey, 'complete');
+        return false;
+      }
+      
+      // No data yet, don't start polling
+      return false;
+    },
     enabled: !!dateRange?.startDate && !!dateRange?.endDate,
   });
 }

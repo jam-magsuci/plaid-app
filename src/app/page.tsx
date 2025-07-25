@@ -45,6 +45,7 @@ export default function Home() {
 
   const handleDateSelected = (range: { startDate: string; endDate: string }) => {
     setDateRange(range);
+    setShowDateDialog(false);
     if (ready && linkToken) {
       open(); // Only open Plaid after dates are confirmed
     }

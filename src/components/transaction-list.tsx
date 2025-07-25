@@ -29,6 +29,8 @@ import { TransactionIcon } from "./transaction-icon"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useInstitution } from "@/hooks/use-institution"
+import { useSyncStatus } from "@/hooks/use-plaid"
+import { Loader2 } from "lucide-react"
 
 type SortOption =
   | "date-desc"
@@ -187,6 +189,13 @@ export const TransactionList: FC<{ transactions: Transaction[] }> = ({
               ))}
             </TableBody>
           </Table>
+          {/* Sync Status Indicator */}
+          {useSyncStatus() === 'syncing' && (
+            <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Syncing transactions...</span>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
