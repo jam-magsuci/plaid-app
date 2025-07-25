@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       end_date: endDate,
       options: {
         include_personal_finance_category: true,
-        count: 100,
+        count: 500,
       }
     });
 

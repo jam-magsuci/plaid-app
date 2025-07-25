@@ -86,33 +86,36 @@ export function useTransactions(dateRange?: { startDate: string; endDate: string
     initialData: [], // Start with empty array
     refetchInterval: (query) => {
       const data = query.state.data;
-      const prevData = query.state.data; // Get previous data snapshot
+      const prevData = query.state.data;
       const firstFetchTime = queryClient.getQueryData(firstFetchTimeKey) as number | undefined;
       
-      // If this is the first fetch with data, start polling
-      if (data?.length && data.length > 0) {
-        if (!firstFetchTime) {
-          queryClient.setQueryData(firstFetchTimeKey, Date.now());
-          queryClient.setQueryData(syncStatusKey, 'syncing');
-          return 10000; // Start polling
-        }
-
-        // Check if we've received new transactions in this fetch
-        const hasNewTransactions = data.length > (prevData?.length || 0);
-        const timeSinceFirstFetch = Date.now() - firstFetchTime;
-
-        // Continue polling if we're still getting new data or haven't reached timeout
-        if (hasNewTransactions || timeSinceFirstFetch < 30 * 1000) { // 30 seconds timeout
-          return 10000; // Poll every 10 seconds
-        }
-
-        // No new transactions and timeout reached, stop polling
-        queryClient.removeQueries({ queryKey: firstFetchTimeKey });
-        queryClient.setQueryData(syncStatusKey, 'complete');
+      // No data yet, don't start polling
+      if (!data?.length) {
         return false;
       }
+
+      // If this is the first fetch with data, start polling
+      if (!firstFetchTime) {
+        queryClient.setQueryData(firstFetchTimeKey, Date.now());
+        queryClient.setQueryData(syncStatusKey, 'syncing');
+        return 10000; // Start polling every 10 seconds
+      }
       
-      // No data yet, don't start polling
+      // Check if we're still getting new transactions
+      const hasNewTransactions = data.length > (prevData?.length || 0);
+      const timeSinceFirstFetch = Date.now() - firstFetchTime;
+      
+      // Continue polling if:
+      // 1. We're still getting new transactions OR
+      // 2. We haven't waited long enough for historical data (at least 30 seconds)
+      if (hasNewTransactions || timeSinceFirstFetch < 30 * 1000) {
+        queryClient.setQueryData(syncStatusKey, 'syncing');
+        return 10000; // Poll every 10 seconds
+      }
+      
+      // No new transactions and we've waited long enough, stop polling
+      queryClient.removeQueries({ queryKey: firstFetchTimeKey });
+      queryClient.setQueryData(syncStatusKey, 'complete');
       return false;
     },
     enabled: !!dateRange?.startDate && !!dateRange?.endDate,
