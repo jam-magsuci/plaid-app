@@ -117,7 +117,7 @@ export function DateRangeDialog({ onDateRangeSelected, open, onOpenChange }: Dat
                 onChange={(e) => {
                   const date = new Date(e.target.value);
                   setEndValue(e.target.value);
-                  if (isValidDate(date)) {
+                  if (isValidDate(date) && date <= new Date()) {
                     setEndDate(date);
                     setEndMonth(date);
                   }
@@ -139,6 +139,8 @@ export function DateRangeDialog({ onDateRangeSelected, open, onOpenChange }: Dat
                     selected={endDate}
                     month={endMonth}
                     onMonthChange={setEndMonth}
+                    disabled={(date) => date > new Date()}
+                    defaultMonth={new Date()}
                     onSelect={(date) => {
                       if (date) {
                         setEndDate(date);
