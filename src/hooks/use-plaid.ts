@@ -54,11 +54,18 @@ export function useSyncStatus() {
   return queryClient.getQueryData(syncStatusKey) as 'syncing' | 'complete' | undefined;
 }
 
+// Key for tracking the number of sync attempts
+const syncAttemptsKey = ['transactions', 'syncAttempts'] as const;
+
 export function useTransactions(dateRange?: { startDate: string; endDate: string }) {
   const queryClient = useQueryClient();
   const firstFetchTimeKey = ['transactions', 'firstFetchTime'] as const;
   const syncStatusKey = ['transactions', 'syncStatus'] as const;
   const lastTransactionKey = ['transactions', 'lastTransaction'] as const;
+  // Initialize sync attempts counter if it doesn't exist
+  if (queryClient.getQueryData(syncAttemptsKey) === undefined) {
+    queryClient.setQueryData(syncAttemptsKey, 0);
+  }
 
   return useQuery<Transaction[], Error, Transaction[], [string, typeof dateRange]>({
     queryKey: ['transactions', dateRange],
@@ -89,6 +96,7 @@ export function useTransactions(dateRange?: { startDate: string; endDate: string
       const data = query.state.data;
       const lastTransaction = queryClient.getQueryData(lastTransactionKey) as Transaction | undefined;
       const firstFetchTime = queryClient.getQueryData(firstFetchTimeKey) as number | undefined;
+      const syncAttempts = queryClient.getQueryData(syncAttemptsKey) as number || 0;
       
       // No data yet, don't start polling
       if (!data?.length) {
@@ -100,10 +108,22 @@ export function useTransactions(dateRange?: { startDate: string; endDate: string
       const currentLastTransaction = data[data.length - 1];
       queryClient.setQueryData(lastTransactionKey, currentLastTransaction);
 
+      // If we've already synced 3 times, stop polling
+      if (syncAttempts >= 3) {
+        console.log('Reached maximum sync attempts (3), stopping sync');
+        queryClient.removeQueries({ queryKey: firstFetchTimeKey });
+        queryClient.removeQueries({ queryKey: lastTransactionKey });
+        queryClient.setQueryData(syncStatusKey, 'complete');
+        return false;
+      }
+
       // If this is the first fetch with data, start polling
       if (!firstFetchTime) {
         queryClient.setQueryData(firstFetchTimeKey, Date.now());
         queryClient.setQueryData(syncStatusKey, 'syncing');
+        // Increment sync attempts counter
+        queryClient.setQueryData(syncAttemptsKey, syncAttempts + 1);
+        console.log(`Starting sync attempt ${syncAttempts + 1} of 3`);
         return 10000; // Start polling every 10 seconds
       }
       
@@ -116,6 +136,9 @@ export function useTransactions(dateRange?: { startDate: string; endDate: string
       // 2. We haven't waited long enough for initial sync (at least 15 seconds)
       if (hasNewTransactions || timeSinceFirstFetch < 15 * 1000) {
         queryClient.setQueryData(syncStatusKey, 'syncing');
+        // Increment sync attempts counter
+        queryClient.setQueryData(syncAttemptsKey, syncAttempts + 1);
+        console.log(`Continuing sync attempt ${syncAttempts + 1} of 3`);
         return 10000; // Poll every 10 seconds
       }
       
