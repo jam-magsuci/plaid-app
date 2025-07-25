@@ -44,11 +44,11 @@ export function useExchangeToken() {
 }
 
 interface DateRange {
-  startDate?: string;
-  endDate?: string;
+  from?: Date;
+  to?: Date;
 }
 
-export function useTransactions(dateRange?: DateRange) {
+export function useTransactions(dateRange?: { startDate: string; endDate: string }) {
   return useQuery({
     queryKey: ['transactions', dateRange],
     queryFn: async () => {
@@ -71,5 +71,6 @@ export function useTransactions(dateRange?: DateRange) {
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 1000,
+    enabled: !!dateRange?.startDate && !!dateRange?.endDate,
   });
 }

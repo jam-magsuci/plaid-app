@@ -4,17 +4,18 @@ import { Button } from "@/components/ui/button"
 import { TransactionList } from "@/components/transaction-list"
 import { PlusCircle } from "lucide-react"
 import { usePlaidLink } from "react-plaid-link"
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePlaidLinkToken, useExchangeToken, useTransactions } from "@/hooks/use-plaid"
 import { useQueryClient } from "@tanstack/react-query";
-
-
+import { DateRangeDialog } from "@/components/date-range-dialog";
 
 export default function Home() {
   const queryClient = useQueryClient();
   const { mutate: getLinkToken, data: linkToken } = usePlaidLinkToken();
   const { mutate: exchangeToken } = useExchangeToken();
-  const { data: transactions = [], isLoading } = useTransactions();
+  const [dateRange, setDateRange] = useState<{ startDate: string; endDate: string }>();
+  const [showDateDialog, setShowDateDialog] = useState(false);
+  const { data: transactions = [], isLoading } = useTransactions(dateRange);
 
   const { open, ready } = usePlaidLink({
     token: linkToken ?? null,
@@ -37,9 +38,15 @@ export default function Home() {
     }
   }, [getLinkToken, linkToken]);
 
-  const handleClick = () => {
+  const handleConnectBank = () => {
+    if (!ready || !linkToken) return;
+    setShowDateDialog(true); // Open the date picker dialog
+  };
+
+  const handleDateSelected = (range: { startDate: string; endDate: string }) => {
+    setDateRange(range);
     if (ready && linkToken) {
-      open();
+      open(); // Only open Plaid after dates are confirmed
     }
   };
 
@@ -55,14 +62,21 @@ export default function Home() {
               A clear view of your financial transactions.
             </p>
           </div>
-          <Button 
-            size="lg" 
-            onClick={handleClick}
-            disabled={!ready}
-          >
-            <PlusCircle className="mr-2" />
-            Link Bank Account
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              size="lg" 
+              onClick={handleConnectBank}
+              disabled={!ready}
+            >
+              <PlusCircle className="mr-2" />
+              Link Bank Account
+            </Button>
+            <DateRangeDialog 
+              open={showDateDialog}
+              onOpenChange={setShowDateDialog}
+              onDateRangeSelected={handleDateSelected}
+            />
+          </div>
         </header>
         <main>
           {isLoading ? (
