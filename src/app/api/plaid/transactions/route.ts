@@ -33,7 +33,8 @@ export async function GET() {
       start_date: startDate.toISOString().split('T')[0],
       end_date: now.toISOString().split('T')[0],
       options: {
-        include_personal_finance_category: true
+        include_personal_finance_category: true,
+        count: 100,
       }
     });
 
