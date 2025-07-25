@@ -23,10 +23,23 @@ export async function POST(request: Request) {
     });
 
     const accessToken = response.data.access_token;
-    // Store the access token in our simple store
+    const itemId = response.data.item_id;
+
+    // Get item information to retrieve institution ID
+    const itemResponse = await client.itemGet({
+      access_token: accessToken
+    });
+
+    const institutionId = itemResponse.data.item.institution_id;
+    if (!institutionId) {
+      throw new Error('No institution ID found for this item');
+    }
+
+    // Store the access token and institution ID in our simple store
     plaidStore.setAccessToken(accessToken);
+    plaidStore.setInstitutionId(institutionId);
     
-    console.log('Successfully stored access token:', { accessToken });
+    console.log('Successfully stored access token and institution ID:', { accessToken, institutionId });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error exchanging public token:', {
